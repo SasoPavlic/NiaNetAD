@@ -1,0 +1,12 @@
+PyYAML
+torch
+torchvision
+numpy
+torchmetrics
+tabulate
+pandas
+scipy
+scikit-learn
+matplotlib
+niapy
+pytorch-lightning

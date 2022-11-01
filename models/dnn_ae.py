@@ -1,62 +1,183 @@
-import torch
-import random
+import argparse
+import os
+import time
+from datetime import datetime
 import numpy as np
+import torch
+import torchmetrics
+import yaml
+from torch import tensor
+
+from models.base import BaseVAE
+from models.types_ import *
+import torch.nn as nn
 import torch.nn.functional as F
+import torch.utils
+import torch.distributions
+import random
+import hashlib
+from tabulate import tabulate
 
-from torch import nn
 
+class Autoencoder(BaseVAE, nn.Module):
 
-class Autoencoder(nn.Module):
-
-    def __init__(self, solution, dataset_shape):
+    def __init__(self, solution, **kwargs) -> None:
         super(Autoencoder, self).__init__()
 
+        n_features = kwargs['model_params']['n_features']
+        seq_len = kwargs['model_params']['seq_len']
+        batch_size = kwargs['data_params']['batch_size']
+
+        self.id = str(int(time.time())).strip()
+        self.dataset_shape = [n_features, seq_len]
         self.encoding_layers = nn.ModuleList()
         self.decoding_layers = nn.ModuleList()
+
+        self.topology_shape = self.map_shape(solution[0])
+        self.layer_step = self.map_layer_step(solution[1], self.dataset_shape)
+        self.num_layers = self.map_num_layers(solution[2], self.layer_step, self.dataset_shape)
+        self.activation = self.map_activation(solution[3])
+        self.num_epochs = self.map_num_epochs(solution[4])
+        self.learning_rate = self.map_learning_rate(solution[5])
+
         self.bottleneck_size = 0
-        self.shape = self.get_shape(solution[0])
-        self.layer_step = self.get_layer_step(solution[1], dataset_shape)
-        self.layers = self.get_layers(solution[2], self.layer_step, dataset_shape)
-        self.activation = self.get_activation(solution[3])
-        self.epochs = self.get_epochs(solution[4])
-        self.learning_rate = self.get_learning_rate(solution[5])
+        self.seq_len = seq_len
+        self.n_features = n_features
+        self.batch_size = batch_size
 
-        self.generate_autoencoder(self.shape,
-                                  self.layers,
-
-                                  dataset_shape,
+        self.generate_autoencoder(self.topology_shape,
+                                  self.num_layers,
+                                  self.dataset_shape,
                                   self.layer_step)
 
-        self.optimizer = self.get_optimizer(solution[6])
+        self.optimizer = self.map_optimizer(solution[6])
+        self.get_hash()
+        outputs = []
 
-        print(
-            f"y1: Shape: {self.shape}\n"
-            f"y2: Layer step: {self.layer_step}\n"
-            f"y3: Layers: {self.layers}\n"
-            f"y4: Activation function: {self.activation}\n"
-            f"y5: Epochs: {self.epochs}\n"
-            f"y6: Learning rate: {self.learning_rate}\n"
-            f"y7: Optimizer: {self.optimizer}\n"
-            f"Bottleneck size: {self.bottleneck_size}\n"
-            f"Encoder: {self.encoding_layers}\n"
-            f"Decoder: {self.decoding_layers}\n")
+        outputs.append([self.hash_id,
+                        self.topology_shape,
+                        self.layer_step,
+                        self.num_layers,
+                        self.activation_name,
+                        self.num_epochs,
+                        self.learning_rate,
+                        self.optimizer_name,
+                        self.bottleneck_size,
+                        self.encoding_layers,
+                        self.decoding_layers])
 
-    def forward(self, x):
-        """Flipping shape of tensors"""
-        x = x.reshape(x.shape[1], x.shape[0])
+        print(tabulate(outputs, headers=["ID",
+                                         "Shape (y1)",
+                                         "Layer step (y2)",
+                                         "Layers (y3)",
+                                         "Activation func. (y4)",
+                                         "Epochs (y5)",
+                                         "Learning rate (y6)",
+                                         "Optimizer (y7)",
+                                         "Bottleneck size",
+                                         "Encoder",
+                                         "Decoder", ], tablefmt="pretty"))
+
+    def get_hash(self):
+
+        self.hash_id = hashlib.sha1(str(str(self.topology_shape) +
+                                        str(self.layer_step) +
+                                        str(self.num_layers) +
+                                        str(self.activation_name) +
+                                        str(self.num_epochs) +
+                                        str(self.learning_rate) +
+                                        str(self.optimizer_name) +
+                                        str(self.bottleneck_size) +
+                                        str(self.encoding_layers) +
+                                        str(self.decoding_layers)).encode('utf-8')).hexdigest()
+
+    def encode(self, x: Tensor) -> List[Tensor]:
+        """
+        Encodes the input by passing through the encoder network
+        and returns the latent codes.
+        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (Tensor) List of latent codes
+        """
+        encoded = x.view(x.size(0), -1)
 
         for layer in self.encoding_layers:
-            x = self.activation(layer(x))
+            result = layer(encoded)
+            encoded = self.activation(result)
+
+        return encoded
+
+    def decode(self, z: Tensor) -> Tensor:
+        """
+        Maps the given latent codes
+        onto the image space.
+        :param z: (Tensor) [B x D]
+        :return: (Tensor) [B x C x H x W]
+        """
+
+        decoded = z
 
         for layer in self.decoding_layers:
-            x = self.activation(layer(x))
+            result = layer(decoded)
+            decoded = self.activation(result)
 
         """Flipping back to original shape"""
-        x = x.reshape(x.shape[1], x.shape[0])
+        reconstructed = decoded
+        return reconstructed
 
-        return x
+    def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
+        """Flipping shape of tensors"""
 
-    def get_shape(self, gene):
+        z = self.encode(input)
+        reconstructed = self.decode(z)
+
+        return [reconstructed, input]
+
+    def loss_function(self,
+                      *args,
+                      **kwargs) -> dict:
+        """
+        Computes the AE loss function.
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        recons = args[0]
+        input = args[1]
+
+        recons_loss = F.mse_loss(recons, input)
+
+        loss = recons_loss
+
+        details = {'loss': loss, 'Reconstruction_Loss': recons_loss.detach()}
+        return details
+
+    def sample(self,
+               num_samples: int,
+               current_device: int, **kwargs) -> Tensor:
+        """
+        Samples from the latent space and return the corresponding
+        image space map.
+        :param num_samples: (Int) Number of samples
+        :param current_device: (Int) Device to run the model
+        :return: (Tensor)
+        """
+        z = torch.randn(num_samples, self.bottleneck_size)
+
+        z = z.to(current_device)
+
+        samples = self.decode(z)
+        return samples
+
+    def generate(self, x: Tensor, **kwargs) -> Tensor:
+        """
+        Given an input image x, returns the reconstructed image
+        :param x: (Tensor) [B x C x H x W]
+        :return: (Tensor) [B x C x H x W]
+        """
+        reconstructed = self.forward(x)[0]
+        return reconstructed
+
+    def map_shape(self, gene):
         gene = np.array([gene])
         bins = np.array([0.0, 0.5])
         inds = np.digitize(gene, bins)
@@ -70,7 +191,7 @@ class Autoencoder(nn.Module):
         else:
             raise ValueError(f"Value not between boundaries 0.0 and 1.0. Value is: {inds[0] - 1}")
 
-    def get_layer_step(self, gene, dataset_shape):
+    def map_layer_step(self, gene, dataset_shape):
         gene = np.array([gene])
         bins = []
         value = 1 / dataset_shape[1]
@@ -82,7 +203,7 @@ class Autoencoder(nn.Module):
         inds = np.digitize(gene, bins)
         return inds[0]
 
-    def get_layers(self, gene, layer_step, dataset_shape):
+    def map_num_layers(self, gene, layer_step, dataset_shape):
         if layer_step == 0:
             max_layers = dataset_shape[1]
             return max_layers
@@ -105,49 +226,57 @@ class Autoencoder(nn.Module):
             bins[-1] = 1.01
             inds = np.digitize(gene, bins)
 
-            return inds[0]
+            return int(inds[0])
 
-    def get_activation(self, gene):
+    def map_activation(self, gene):
         gene = np.array([gene])
         bins = np.array([0.0, 0.125, 0.25, 0.375, 0.500, 0.625, 0.750, 0.875, 1.01])
         inds = np.digitize(gene, bins)
 
         if inds[0] - 1 == 0:
+            self.activation_name = "ELU"
             return F.elu
 
         elif inds[0] - 1 == 1:
+            self.activation_name = "RELU"
             return F.relu
 
         elif inds[0] - 1 == 2:
+            self.activation_name = "Leaky RELU"
             return F.leaky_relu
 
         elif inds[0] - 1 == 3:
+            self.activation_name = "RRELU"
             return F.rrelu
 
         elif inds[0] - 1 == 4:
+            self.activation_name = "SELU"
             return F.selu
 
         elif inds[0] - 1 == 5:
+            self.activation_name = "CELU"
             return F.celu
 
         elif inds[0] - 1 == 6:
+            self.activation_name = "GELU"
             return F.gelu
 
         elif inds[0] - 1 == 7:
+            self.activation_name = "TANH"
             return torch.tanh
 
         else:
 
             raise ValueError(f"Value not between boundaries 0.0 and 1.0. Value is: {inds[0] - 1}")
 
-    def get_epochs(self, gene):
+    def map_num_epochs(self, gene):
         gene = np.array([gene])
         bins = np.array([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.60, 0.7, 0.8, 0.9, 1.01])
         inds = np.digitize(gene, bins)
 
-        return inds[0] * 10 + 100
+        return int(inds[0]) * 10 + 100
 
-    def get_learning_rate(self, gene):
+    def map_learning_rate(self, gene):
         gene = np.array([gene])
         bins = []
         value = 1 / 1000
@@ -159,7 +288,7 @@ class Autoencoder(nn.Module):
         inds = np.digitize(gene, bins)
         lr = np.array(bins)[inds[0]]
 
-        return lr
+        return round(lr, 2)
 
     def generate_autoencoder(self, shape, layers, dataset_shape, layer_step):
         if shape == "SYMMETRICAL":
@@ -240,31 +369,38 @@ class Autoencoder(nn.Module):
             else:
                 self.bottleneck_size = self.encoding_layers[-1].out_features
 
-    def get_optimizer(self, gene):
+    def map_optimizer(self, gene):
         gene = np.array([gene])
         bins = np.array([0.0, 0.167, 0.334, 0.50, 0.667, 0.834, 1.01])
         inds = np.digitize(gene, bins)
 
         """When AE does not have any layers"""
         if len(list(self.parameters())) == 0:
+            self.optimizer_name = "Empty"
             return None
 
         if inds[0] - 1 == 0:
+            self.optimizer_name = "Adam"
             return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
         elif inds[0] - 1 == 1:
+            self.optimizer_name = "Adagrad"
             return torch.optim.Adagrad(self.parameters(), lr=self.learning_rate)
 
         elif inds[0] - 1 == 2:
+            self.optimizer_name = "SGD"
             return torch.optim.SGD(self.parameters(), lr=self.learning_rate)
 
         elif inds[0] - 1 == 3:
+            self.optimizer_name = "RAdam"
             return torch.optim.RAdam(self.parameters(), lr=self.learning_rate)
 
         elif inds[0] - 1 == 4:
+            self.optimizer_name = "ASGD"
             return torch.optim.ASGD(self.parameters(), lr=self.learning_rate)
 
         elif inds[0] - 1 == 5:
+            self.optimizer_name = "RPROP"
             return torch.optim.Rprop(self.parameters(), lr=self.learning_rate)
 
         else:

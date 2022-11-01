@@ -62,6 +62,19 @@ You can run the NiaNet script once your setup is complete.
 
 `python evolve_for_diabetes_dataset.py`
 
+### Docker
+
+```docker build --tag spartan300/nianet:dnnae . ```
+
+```
+docker run \
+  --name=nianet-dnnae \
+  -it \
+  -v $(pwd):/app/logs \
+  --gpus all spartan300/nianet:dnnae \
+  python ./dnn_ae_run.py
+```
+
 ### HELP ⚠️
 
 **saso.pavlic@student.um.si**
