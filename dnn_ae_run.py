@@ -5,11 +5,9 @@ from pathlib import Path
 
 import torch
 import yaml
-from niapy.algorithms.modified import SelfAdaptiveDifferentialEvolution
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.plugins import DDPPlugin
 from pytorch_lightning.utilities.seed import seed_everything
 from tabulate import tabulate
 
@@ -20,7 +18,7 @@ from niapy_extension.wrapper import *
 from storage.database import SQLiteConnector
 
 RUN_UUID = uuid.uuid4().hex
-parser = argparse.ArgumentParser(description='Generic runner for LSTM VAE models')
+parser = argparse.ArgumentParser(description='Generic runner for DNN AE models')
 parser.add_argument('--config', '-c',
                     dest="filename",
                     metavar='FILE',
@@ -84,7 +82,7 @@ class RNNVAEAEArchitecture(ExtendedProblem):
                                               name=str(self.iteration) + "_" + alg_name + "_" + model.hash_id)
 
                 runner = Trainer(logger=tb_logger,
-                                 enable_progress_bar=True,
+                                 enable_progress_bar=False,
                                  accelerator="gpu",
                                  devices=1,
                                  auto_select_gpus=True,
