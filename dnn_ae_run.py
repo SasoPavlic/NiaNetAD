@@ -5,6 +5,7 @@ from pathlib import Path
 
 import torch
 import yaml
+from niapy.algorithms.modified import SelfAdaptiveDifferentialEvolution
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -63,6 +64,7 @@ class RNNVAEAEArchitecture(ExtendedProblem):
 
         model = vae_models[config['model_params']['name']](solution, **config)
         existing_entry = conn.get_entries(hash_id=model.hash_id)
+        # model.num_epochs = 30
 
         if existing_entry.shape[0] > 0:
             fitness = existing_entry['fitness'][0]
@@ -73,6 +75,7 @@ class RNNVAEAEArchitecture(ExtendedProblem):
             """Punishing bad decisions"""
             if len(model.encoding_layers) == 0 or len(model.decoding_layers) == 0:
                 RMSE = int(9e10)
+                AUC = 0.0
             else:
                 experiment = DNNAEExperiment(model, config['exp_params'], config['model_params']['n_features'])
                 config['trainer_params']['max_epochs'] = model.num_epochs
@@ -83,9 +86,9 @@ class RNNVAEAEArchitecture(ExtendedProblem):
 
                 runner = Trainer(logger=tb_logger,
                                  enable_progress_bar=False,
-                                 accelerator="gpu",
-                                 devices=1,
-                                 auto_select_gpus=True,
+                                 # accelerator="gpu",
+                                 # devices=1,
+                                 # auto_select_gpus=True,
                                  callbacks=[
                                      LearningRateMonitor(),
                                      ModelCheckpoint(save_top_k=1,
@@ -105,14 +108,16 @@ class RNNVAEAEArchitecture(ExtendedProblem):
                 # Known problem: https://discuss.pytorch.org/t/why-my-model-returns-nan/24329/5
                 if math.isnan(experiment.test_RMSE.item()):
                     RMSE = int(9e10)
+                    AUC = experiment.AUC
                 else:
                     RMSE = experiment.test_RMSE.item()
+                    AUC = experiment.AUC
 
             complexity = (model.num_epochs ** 2) + (model.num_layers * 100) + (model.bottleneck_size * 10)
-            fitness = (RMSE * 1000) + (complexity / 100)
+            fitness = (AUC * 10000) + (RMSE * 1000) + (complexity / 100)
 
-            print(tabulate([[RMSE, complexity, fitness]], headers=["RMSE", "Complexity", "Fitness"], tablefmt="pretty"))
-            conn.post_entries(model, fitness, solution, RMSE, complexity, alg_name, self.iteration)
+            print(tabulate([[RMSE, AUC, complexity, fitness]], headers=["RMSE", "AUC", "Complexity", "Fitness"], tablefmt="pretty"))
+            conn.post_entries(model, fitness, solution, RMSE, AUC, complexity, alg_name, self.iteration)
 
             return fitness
 
@@ -139,10 +144,10 @@ if __name__ == '__main__':
         runs=1,
         algorithms=[
             ParticleSwarmAlgorithm(),
-            # DifferentialEvolution(),
-            # FireflyAlgorithm(),
-            # SelfAdaptiveDifferentialEvolution(),
-            # GeneticAlgorithm()
+            DifferentialEvolution(),
+            FireflyAlgorithm(),
+            SelfAdaptiveDifferentialEvolution(),
+            GeneticAlgorithm()
         ],
         problems=[
             RNNVAEAEArchitecture(DIMENSIONALITY)

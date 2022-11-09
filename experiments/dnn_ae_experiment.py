@@ -1,10 +1,13 @@
+from typing import Any
+
+import torch
 import torchmetrics
 from pytorch_lightning import LightningModule
-from torch import optim
-from models import BaseVAE
-from typing import Any
-import torch
 from torch import Tensor, tensor
+from torch import optim
+
+from experiments.anomalyDetection import AnomalyDetection
+from models import BaseVAE
 
 
 class RMSE(torchmetrics.Metric):
@@ -46,6 +49,7 @@ class DNNAEExperiment(LightningModule):
         # https://torchmetrics.readthedocs.io/en/latest/pages/overview.html#metrics-and-devices
         self.testing_RMSE_metric = RMSE()
         self.test_RMSE = None
+        self.AUC = None
 
         try:
             self.hold_graph = self.params['retain_first_backpass']
@@ -96,7 +100,8 @@ class DNNAEExperiment(LightningModule):
                                               optimizer_idx=optimizer_idx,
                                               batch_idx=batch_idx)
 
-        self.log_dict({key: val.item() for key, val in train_loss.items()}, sync_dist=True, on_step=False, on_epoch=True)
+        self.log_dict({key: val.item() for key, val in train_loss.items()}, sync_dist=True, on_step=False,
+                      on_epoch=True)
         return train_loss['loss']
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
@@ -128,15 +133,33 @@ class DNNAEExperiment(LightningModule):
             except StopIteration:
                 break
             finally:
-                self.testing_RMSE_metric.to('cuda')
-                recons = self.model.generate(data, labels=target)
-                self.testing_RMSE_metric.update(recons, data)
+                self.testing_RMSE_metric.to(self.curr_device)
+                results = self.model.generate(data, labels=target)
+                self.testing_RMSE_metric.update(results[0], results[1])
 
-    def sample_signals(self):
+    def on_train_end(self) -> None:
+        self.calculate_AUC()
+
+    def calculate_AUC(self):
+        anomaly_detection = AnomalyDetection([1], [0])
+        dataloader_iterator = iter(self.trainer.datamodule.test_dataloader())
+
         try:
-            samples = self.model.sample(self.n_features,
-                                        self.curr_device)
-            pass
+            inputs = []
+            reconstructs = []
+            targets = []
 
-        except Warning:
-            pass
+            for data, target in dataloader_iterator:
+                reconstructed, input = self.model.forward(data)
+
+                for x, y, z in zip(reconstructed, input, target):
+                    inputs.append(x)
+                    reconstructs.append(y)
+                    targets.append(z)
+
+            anomaly_detection.find(inputs, reconstructs, targets)
+
+        except StopIteration as e:
+            print(f"Testing model: {e}")
+        finally:
+            self.AUC = anomaly_detection.AUC

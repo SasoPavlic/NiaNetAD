@@ -95,8 +95,9 @@ class TabularDataset(LightningDataModule):
             num_workers: int = 16,
             pin_memory: bool = False,
             train_size: int = 80,
-            val_size: int = 10,
             test_size: int = 10,
+            val_size: int = 10,
+            anomaly_label: bool = True,
             **kwargs,
     ):
         super().__init__()
@@ -106,8 +107,9 @@ class TabularDataset(LightningDataModule):
         self.num_workers = num_workers
         self.pin_memory = pin_memory
         self.train_size = train_size
-        self.val_size = val_size
         self.test_size = test_size
+        self.val_size = val_size
+        self.anomaly_label = anomaly_label
 
     def setup(self, stage: Optional[str] = None) -> None:
         with open(f'{self.data_path}/fault_detection.csv') as f:
@@ -119,9 +121,14 @@ class TabularDataset(LightningDataModule):
         x_train, x_test, y_train, y_test = train_test_split(df_data, df_target, test_size=self.test_size)
         x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=self.val_size)
 
+        y_train = pd.Series([0 if yi == self.anomaly_label else 1 for yi in y_train])
+        y_test = pd.Series([0 if yi == self.anomaly_label else 1 for yi in y_test])
+        y_val = pd.Series([0 if yi == self.anomaly_label else 1 for yi in y_val])
+
         self.train_dataset = Transformer_train(self.batch_size, x_train, y_train)
-        self.val_dataset = Transformer_val(self.batch_size, x_val, y_train)
         self.test_dataset = Transformer_test(self.batch_size, x_test, y_test)
+        self.val_dataset = Transformer_val(self.batch_size, x_val, y_val)
+
 
     # TODO Implement re-usable datalaoder process
     # https://github.com/pytorch/pytorch/issues/15849#issuecomment-573921048

@@ -174,8 +174,8 @@ class Autoencoder(BaseVAE, nn.Module):
         :param x: (Tensor) [B x C x H x W]
         :return: (Tensor) [B x C x H x W]
         """
-        reconstructed = self.forward(x)[0]
-        return reconstructed
+        reconstructed, input = self.forward(x)
+        return [reconstructed, input]
 
     def map_shape(self, gene):
         gene = np.array([gene])

@@ -42,7 +42,7 @@ class SQLiteConnector():
 
         return best_solution, best_algorithm
 
-    def post_entries(self, model, fitness, solution, RMSE, complexity, alg_name, iteration):
+    def post_entries(self, model, fitness, solution, RMSE, AUC, complexity, alg_name, iteration):
         try:
             self.create_connection()
             json_solution = json.dumps(solution.tolist())
@@ -61,6 +61,7 @@ class SQLiteConnector():
                                'optimizer': str(model.optimizer_name),
                                'bottleneck_size': int(model.bottleneck_size),
                                'RMSE': float(RMSE),
+                               'AUC': float(AUC),
                                'complexity': int(complexity),
                                'fitness': int(fitness),
                                'solution_array': str(json_solution).strip()
@@ -89,6 +90,7 @@ class SQLiteConnector():
                             optimizer       TEXT,
                             bottleneck_size INTEGER,
                             RMSE            REAL,
+                            AUC             REAL,
                             complexity      INTEGER,
                             fitness         INTEGER,
                             solution_array  TEXT
