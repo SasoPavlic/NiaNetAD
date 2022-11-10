@@ -84,8 +84,8 @@ class AnomalyDetection(object):
                 # compute the mean squared error between the ground-truth image
                 # and the reconstructed image, then add it to our list of errors
                 result = (x - y) ** 2
-                result = result.detach().numpy()
-                mse = np.mean(result)
+                #result = result.detach().numpy()
+                mse = np.mean(result.cpu().data.numpy().argmax())
                 errors.append(mse)
 
             for quantile in np.linspace(0, 1, 100):

@@ -144,22 +144,21 @@ class DNNAEExperiment(LightningModule):
         anomaly_detection = AnomalyDetection([1], [0])
         dataloader_iterator = iter(self.trainer.datamodule.test_dataloader())
 
-        try:
-            inputs = []
-            reconstructs = []
-            targets = []
 
-            for data, target in dataloader_iterator:
-                reconstructed, input = self.model.forward(data)
+        inputs = []
+        reconstructs = []
+        targets = []
 
-                for x, y, z in zip(reconstructed, input, target):
-                    inputs.append(x)
-                    reconstructs.append(y)
-                    targets.append(z)
+        for data, target in dataloader_iterator:
+            data = data.to(self.curr_device)
+            reconstructed, input = self.model.forward(data)
 
-            anomaly_detection.find(inputs, reconstructs, targets)
+            for x, y, z in zip(reconstructed, input, target):
+                inputs.append(x)
+                reconstructs.append(y)
+                targets.append(z)
 
-        except StopIteration as e:
-            print(f"Testing model: {e}")
-        finally:
-            self.AUC = anomaly_detection.AUC
+        anomaly_detection.find(inputs, reconstructs, targets)
+
+
+        self.AUC = anomaly_detection.AUC
