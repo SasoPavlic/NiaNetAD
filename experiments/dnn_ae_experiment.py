@@ -7,7 +7,7 @@ from torch import Tensor, tensor
 from torch import optim
 
 from experiments.anomalyDetection import AnomalyDetection
-from models.base import BaseVAE
+from models.base import BaseAutoencoder
 
 
 class RMSE(torchmetrics.Metric):
@@ -36,12 +36,12 @@ class RMSE(torchmetrics.Metric):
 
 class DNNAEExperiment(LightningModule):
     def __init__(self,
-                 lstm_vae_model: BaseVAE,
+                 dnn_ae_model: BaseAutoencoder,
                  params: dict,
                  n_features: int) -> None:
         super(DNNAEExperiment, self).__init__()
 
-        self.model = lstm_vae_model
+        self.model = dnn_ae_model
         self.params = params
         self.n_features = n_features
         self.curr_device = None

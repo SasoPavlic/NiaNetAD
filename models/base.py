@@ -5,10 +5,10 @@ from torch import nn
 from models.types_ import *
 
 
-class BaseVAE(nn.Module):
+class BaseAutoencoder(nn.Module):
 
     def __init__(self) -> None:
-        super(BaseVAE, self).__init__()
+        super(BaseAutoencoder, self).__init__()
 
     def encode(self, input: Tensor) -> List[Tensor]:
         raise NotImplementedError

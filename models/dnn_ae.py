@@ -10,11 +10,11 @@ import torch.nn.functional as F
 import torch.utils
 from tabulate import tabulate
 
-from models.base import BaseVAE
+from models.base import BaseAutoencoder
 from models.types_ import *
 
 
-class Autoencoder(BaseVAE, nn.Module):
+class Autoencoder(BaseAutoencoder, nn.Module):
 
     def __init__(self, solution, **kwargs) -> None:
         super(Autoencoder, self).__init__()

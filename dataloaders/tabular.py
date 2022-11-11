@@ -8,14 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class Transformer_train(Dataset):
-    # https://github.com/gmguarino/ecg-anomaly-detection-vae/blob/master/ecg_dataset.py
     def __init__(self, batch_size, x_train, y_train):
-        # df_train = pd.DataFrame(x_train)
-        # df_train["target"] = pd.to_numeric(df_train["target"])
-        # df_train = df_train.astype('float32')
-
-        # Workaround to to handle last batch in LSTM hidden state
-        # https://discuss.pytorch.org/t/how-to-handle-last-batch-in-lstm-hidden-state/40858
 
         train_size = 0
         if x_train.shape[0] % batch_size == 0:

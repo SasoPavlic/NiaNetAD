@@ -141,7 +141,7 @@ if __name__ == '__main__':
     runner = ExtendedRunner(
         config['logging_params']['save_dir'],
         dimension=DIMENSIONALITY,
-        max_evals=100,
+        max_evals=10,
         runs=1,
         algorithms=[
             ParticleSwarmAlgorithm(),
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     print("=====================================SEARCH COMPLETED============================================")
 
     best_solution, best_algorithm = conn.best_results()
-    best_model = vae_models[config['model_params']['name']](best_solution, **config)
+    best_model = Autoencoder(best_solution, **config)
     model_file = config['logging_params']['save_dir'] + f"{best_algorithm}_{best_model.hash_id}.pt"
     # TODO save model dict
     # https://pytorch.org/tutorials/beginner/saving_loading_models.html#saving-loading-model-for-inference
