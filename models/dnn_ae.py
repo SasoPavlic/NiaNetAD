@@ -1,22 +1,17 @@
-import argparse
-import os
+import hashlib
+import random
 import time
-from datetime import datetime
+
 import numpy as np
 import torch
-import torchmetrics
-import yaml
-from torch import tensor
-
-from models.base import BaseVAE
-from models.types_ import *
+import torch.distributions
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils
-import torch.distributions
-import random
-import hashlib
 from tabulate import tabulate
+
+from models.base import BaseVAE
+from models.types_ import *
 
 
 class Autoencoder(BaseVAE, nn.Module):

@@ -8,7 +8,6 @@ from niapy import Runner
 from niapy.algorithms import Algorithm
 from niapy.problems import Problem
 from niapy.task import OptimizationType, Task
-from niapy.algorithms.basic import *
 from niapy.util import limit
 from niapy.util.factory import get_algorithm
 

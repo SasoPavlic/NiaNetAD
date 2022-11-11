@@ -75,7 +75,6 @@ class AnomalyDetection(object):
 
         try:
 
-
             errors = []
 
             # loop over all original images and their corresponding
@@ -84,7 +83,7 @@ class AnomalyDetection(object):
                 # compute the mean squared error between the ground-truth image
                 # and the reconstructed image, then add it to our list of errors
                 result = (x - y) ** 2
-                #result = result.detach().numpy()
+                # result = result.detach().numpy()
                 mse = np.mean(result.cpu().data.numpy().argmax())
                 errors.append(mse)
 
@@ -111,5 +110,3 @@ class AnomalyDetection(object):
         except Exception as e:
             print(e)
             self.AUC = 0.0
-
-

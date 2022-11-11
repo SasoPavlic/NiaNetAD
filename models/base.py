@@ -1,6 +1,8 @@
-from models.types_ import *
-from torch import nn
 from abc import abstractmethod
+
+from torch import nn
+
+from models.types_ import *
 
 
 class BaseVAE(nn.Module):

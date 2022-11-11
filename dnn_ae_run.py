@@ -5,6 +5,7 @@ from pathlib import Path
 
 import torch
 import yaml
+from niapy.algorithms.basic import ParticleSwarmAlgorithm, DifferentialEvolution, FireflyAlgorithm, GeneticAlgorithm
 from niapy.algorithms.modified import SelfAdaptiveDifferentialEvolution
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, EarlyStopping
@@ -14,7 +15,7 @@ from tabulate import tabulate
 
 from dataloaders.tabular import TabularDataset
 from experiments.dnn_ae_experiment import DNNAEExperiment
-from models import vae_models
+from models.dnn_ae import Autoencoder
 from niapy_extension.wrapper import *
 from storage.database import SQLiteConnector
 
@@ -50,7 +51,7 @@ datamodule = TabularDataset(**config["data_params"], pin_memory=True)
 datamodule.setup()
 
 
-class RNNVAEAEArchitecture(ExtendedProblem):
+class DNNAEArchitecture(ExtendedProblem):
 
     def __init__(self, dimension):
         super().__init__(dimension=dimension, lower=0, upper=1)
@@ -62,9 +63,8 @@ class RNNVAEAEArchitecture(ExtendedProblem):
         print(f"SOLUTION : {solution}")
         self.iteration += 1
 
-        model = vae_models[config['model_params']['name']](solution, **config)
+        model = Autoencoder(solution, **config)
         existing_entry = conn.get_entries(hash_id=model.hash_id)
-        # model.num_epochs = 30
 
         if existing_entry.shape[0] > 0:
             fitness = existing_entry['fitness'][0]
@@ -116,7 +116,8 @@ class RNNVAEAEArchitecture(ExtendedProblem):
             complexity = (model.num_epochs ** 2) + (model.num_layers * 100) + (model.bottleneck_size * 10)
             fitness = (AUC * 10000) + (RMSE * 1000) + (complexity / 100)
 
-            print(tabulate([[RMSE, AUC, complexity, fitness]], headers=["RMSE", "AUC", "Complexity", "Fitness"], tablefmt="pretty"))
+            print(tabulate([[RMSE, AUC, complexity, fitness]], headers=["RMSE", "AUC", "Complexity", "Fitness"],
+                           tablefmt="pretty"))
             conn.post_entries(model, fitness, solution, RMSE, AUC, complexity, alg_name, self.iteration)
 
             return fitness
@@ -150,7 +151,7 @@ if __name__ == '__main__':
             GeneticAlgorithm()
         ],
         problems=[
-            RNNVAEAEArchitecture(DIMENSIONALITY)
+            DNNAEArchitecture(DIMENSIONALITY)
         ]
     )
 

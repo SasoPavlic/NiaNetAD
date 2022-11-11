@@ -7,7 +7,7 @@ from torch import Tensor, tensor
 from torch import optim
 
 from experiments.anomalyDetection import AnomalyDetection
-from models import BaseVAE
+from models.base import BaseVAE
 
 
 class RMSE(torchmetrics.Metric):
@@ -144,7 +144,6 @@ class DNNAEExperiment(LightningModule):
         anomaly_detection = AnomalyDetection([1], [0])
         dataloader_iterator = iter(self.trainer.datamodule.test_dataloader())
 
-
         inputs = []
         reconstructs = []
         targets = []
@@ -159,6 +158,5 @@ class DNNAEExperiment(LightningModule):
                 targets.append(z)
 
         anomaly_detection.find(inputs, reconstructs, targets)
-
 
         self.AUC = anomaly_detection.AUC

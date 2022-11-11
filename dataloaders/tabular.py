@@ -1,8 +1,7 @@
-import os
+from typing import List, Optional, Union
 
 import pandas as pd
 import torch
-from typing import List, Optional, Sequence, Union, Any, Callable
 from pytorch_lightning import LightningDataModule
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
@@ -128,7 +127,6 @@ class TabularDataset(LightningDataModule):
         self.train_dataset = Transformer_train(self.batch_size, x_train, y_train)
         self.test_dataset = Transformer_test(self.batch_size, x_test, y_test)
         self.val_dataset = Transformer_val(self.batch_size, x_val, y_val)
-
 
     # TODO Implement re-usable datalaoder process
     # https://github.com/pytorch/pytorch/issues/15849#issuecomment-573921048
