@@ -1,0 +1,31 @@
+model_params:
+  name: 'Autoencoder'
+  seq_len: 60
+  n_features: 1
+
+data_params:
+  anomaly_label: True
+  data_path: "data/"
+  batch_size: 10
+  train_size: 0.8
+  test_size: 0.1
+  val_size: 0.1
+  num_workers: 0
+
+exp_params:
+  weight_decay: 0.0
+  manual_seed: 1265
+
+trainer_params:
+  min_epochs: 100
+  max_epochs: from_solution_array
+
+early_stop:
+  monitor: "val_loss"
+  patience: 50
+  min_delta: 0.00
+
+logging_params:
+  name: "Autoencoder"
+  save_dir: "logs/"
+  db_storage: "logs/solution.db"
