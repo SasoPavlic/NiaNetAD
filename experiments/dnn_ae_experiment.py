@@ -41,6 +41,8 @@ class DNNAEExperiment(LightningModule):
                  n_features: int) -> None:
         super(DNNAEExperiment, self).__init__()
 
+        self.save_hyperparameters()
+
         self.model = dnn_ae_model
         self.params = params
         self.n_features = n_features

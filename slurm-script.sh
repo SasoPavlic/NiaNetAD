@@ -1,4 +1,6 @@
 #!/bin/bash
+## Running code on SLURM cluster
+##https://pytorch-lightning.readthedocs.io/en/stable/clouds/cluster_advanced.html
 #SBATCH -J nianet-dnnae
 #SBATCH -o nianet-dnnae-%j.out
 #SBATCH -e nianet-dnnae-%j.err
