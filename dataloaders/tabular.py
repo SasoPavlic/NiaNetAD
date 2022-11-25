@@ -113,9 +113,10 @@ class TabularDataset(LightningDataModule):
         x_train, x_test, y_train, y_test = train_test_split(df_data, df_target, test_size=self.test_size)
         x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=self.val_size)
 
-        y_train = pd.Series([0 if yi == self.anomaly_label else 1 for yi in y_train])
-        y_test = pd.Series([0 if yi == self.anomaly_label else 1 for yi in y_test])
-        y_val = pd.Series([0 if yi == self.anomaly_label else 1 for yi in y_val])
+        temp_dataset = y_train
+        y_train = pd.Series([1 if yi == self.anomaly_label else 0 for yi in y_train])
+        y_test = pd.Series([1 if yi == self.anomaly_label else 0 for yi in y_test])
+        y_val = pd.Series([1 if yi == self.anomaly_label else 0 for yi in y_val])
 
         self.train_dataset = Transformer_train(self.batch_size, x_train, y_train)
         self.test_dataset = Transformer_test(self.batch_size, x_test, y_test)

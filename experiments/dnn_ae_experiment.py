@@ -41,7 +41,8 @@ class DNNAEExperiment(LightningModule):
                  n_features: int) -> None:
         super(DNNAEExperiment, self).__init__()
 
-        self.save_hyperparameters()
+        # https://github.com/Lightning-AI/lightning/issues/4390#issuecomment-717447779
+        self.save_hyperparameters(logger=False)
 
         self.model = dnn_ae_model
         self.params = params
@@ -143,7 +144,7 @@ class DNNAEExperiment(LightningModule):
         self.calculate_AUC()
 
     def calculate_AUC(self):
-        anomaly_detection = AnomalyDetection([1], [0])
+        anomaly_detection = AnomalyDetection([0], [1])
         dataloader_iterator = iter(self.trainer.datamodule.test_dataloader())
 
         inputs = []

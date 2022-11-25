@@ -1,13 +1,6 @@
 import numpy as np
 from sklearn.metrics import accuracy_score
 
-
-class AnomalyDetectionConfig:
-
-    def __init__(self):
-        self.anomaly_label = 0
-
-
 class Metric(object):
     def __init__(self, quantile, threshold, outliers_idx, quantile_instance_labels):
         self.quantile = quantile
@@ -101,7 +94,7 @@ class AnomalyDetection(object):
                 self.TPR_array.append(metric.TPR)
 
                 """Calculating reconstruction accuracy per quantiles"""
-                predicted_values = [1 if i in outliers_idx else 0 for i, value in enumerate(target)]
+                predicted_values = [self.anomaly_label if i in outliers_idx else self.valid_label for i, value in enumerate(target)]
 
                 self.acc_list.append(accuracy_score(predicted_values, target))
 

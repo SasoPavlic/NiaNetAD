@@ -71,7 +71,7 @@ class ExtendedRunner(Runner):
     def __init__(self, dir_path, dimension=10, max_evals=1000000, runs=1, algorithms='ArtificialBeeColonyAlgorithm',
                  problems='Ackley'):
 
-        self.dir_path = dir_path + "export/"
+        self.dir_path = dir_path
         super().__init__(dimension, max_evals, runs, algorithms, problems)
 
     def task_factory(self, alg_name, name):
