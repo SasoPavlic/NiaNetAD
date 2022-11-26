@@ -79,7 +79,7 @@ docker run \
   --name=nianet-dnnae \
   -it \
   -v $(pwd):/app/logs \
-  --gpus all spartan300/nianet:dnnae \
+  --gpus all spartan300/nianet:ae \
   python ./dnn_ae_run.py
 ```
 

@@ -1,37 +1,10 @@
-from typing import Any
-
-import torch
-import torchmetrics
 from pytorch_lightning import LightningModule
-from torch import Tensor, tensor
+from torch import Tensor
 from torch import optim
 
-from experiments.anomalyDetection import AnomalyDetection
+from experiments.anomaly_detection import AnomalyDetection
+from experiments.metrics import RMSE
 from models.base import BaseAutoencoder
-
-
-class RMSE(torchmetrics.Metric):
-    # https: // www.pytorchlightning.ai / blog / torchmetrics - pytorch - metrics - built - to - scale
-    def __init__(self, **kwargs: Any, ) -> None:
-        super().__init__(**kwargs)
-
-        self.add_state("sum_squared_error", default=tensor(0.0), dist_reduce_fx="sum")
-        self.add_state("n_observations", default=tensor(0), dist_reduce_fx="sum")
-
-    def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
-        """Update state with predictions and targets.
-
-        Args:
-            preds: Predictions from model
-            target: Ground truth values
-        """
-
-        self.sum_squared_error += torch.sum((preds - target) ** 2)
-        self.n_observations += preds.numel()
-
-    def compute(self) -> Tensor:
-        """Computes mean squared error over state."""
-        return torch.sqrt(self.sum_squared_error / self.n_observations)
 
 
 class DNNAEExperiment(LightningModule):
@@ -42,7 +15,7 @@ class DNNAEExperiment(LightningModule):
         super(DNNAEExperiment, self).__init__()
 
         # https://github.com/Lightning-AI/lightning/issues/4390#issuecomment-717447779
-        self.save_hyperparameters(logger=False)
+        #self.save_hyperparameters(logger=False)
 
         self.model = dnn_ae_model
         self.params = params

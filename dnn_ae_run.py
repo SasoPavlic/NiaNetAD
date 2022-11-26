@@ -44,7 +44,7 @@ early_stop_callback = EarlyStopping(monitor=config['early_stop']['monitor'],
                                     check_finite=True,
                                     mode="max")
 
-conn = SQLiteConnector(config['logging_params']['db_storage'], f"solution_{RUN_UUID}")
+conn = SQLiteConnector(config['logging_params']['db_storage'], f"solutions")  # _{RUN_UUID}")
 seed_everything(config['exp_params']['manual_seed'], True)
 
 datamodule = TabularDataset(**config["data_params"], pin_memory=True)
@@ -65,6 +65,8 @@ class DNNAEArchitecture(ExtendedProblem):
 
         model = Autoencoder(solution, **config)
         existing_entry = conn.get_entries(hash_id=model.hash_id)
+        path = config['logging_params']['save_dir'] + str(self.iteration) + "_" + alg_name + "_" + model.hash_id
+        Path(path).mkdir(parents=True, exist_ok=True)
 
         if existing_entry.shape[0] > 0:
             fitness = existing_entry['fitness'][0]
@@ -79,8 +81,6 @@ class DNNAEArchitecture(ExtendedProblem):
             else:
                 experiment = DNNAEExperiment(model, config['exp_params'], config['model_params']['n_features'])
                 config['trainer_params']['max_epochs'] = model.num_epochs
-                Path(config['logging_params']['save_dir'] + str(
-                    self.iteration) + "_" + alg_name + "_" + model.hash_id).mkdir(parents=True, exist_ok=True)
                 tb_logger = TensorBoardLogger(save_dir=config['logging_params']['save_dir'],
                                               name=str(self.iteration) + "_" + alg_name + "_" + model.hash_id)
 
@@ -114,11 +114,12 @@ class DNNAEArchitecture(ExtendedProblem):
                     AUC = experiment.AUC
 
             complexity = (model.num_epochs ** 2) + (model.num_layers * 100) + (model.bottleneck_size * 10)
-            fitness = (AUC * 10000) + (RMSE * 1000) + (complexity / 100)
+            fitness = (RMSE * 1000) + (complexity / 100)
 
             print(tabulate([[RMSE, AUC, complexity, fitness]], headers=["RMSE", "AUC", "Complexity", "Fitness"],
                            tablefmt="pretty"))
             conn.post_entries(model, fitness, solution, RMSE, AUC, complexity, alg_name, self.iteration)
+            torch.save(model.state_dict(), path + f"/model.pt")
 
             return fitness
 
@@ -141,7 +142,7 @@ if __name__ == '__main__':
     runner = ExtendedRunner(
         config['logging_params']['save_dir'],
         dimension=DIMENSIONALITY,
-        max_evals=10,
+        max_evals=1000,
         runs=1,
         algorithms=[
             ParticleSwarmAlgorithm(),
@@ -162,8 +163,7 @@ if __name__ == '__main__':
     best_solution, best_algorithm = conn.best_results()
     best_model = Autoencoder(best_solution, **config)
     model_file = config['logging_params']['save_dir'] + f"{best_algorithm}_{best_model.hash_id}.pt"
-    # TODO save model dict
     # https://pytorch.org/tutorials/beginner/saving_loading_models.html#saving-loading-model-for-inference
-    torch.save(best_model, model_file)
+    torch.save(best_model.state_dict(), model_file)
     print(f"Best model saved to: {model_file}")
     print(f'\n Program end: {datetime.now().strftime("%H:%M:%S-%d/%m/%Y")}')
