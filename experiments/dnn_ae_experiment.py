@@ -138,7 +138,7 @@ class DNNAEExperiment(LightningModule):
                 outputs.append(y)
                 targets.append(z.item())
                 score = torch.sqrt(torch.sum((y - x) ** 2, dim=tuple(range(1, y.dim()))))
-                scores.append(score.detach().numpy().tolist())
+                scores.append(score.cpu().data.numpy().tolist())
 
         anomaly_detection.find(inputs, outputs, targets)
         anomaly_detection.calculate_roc_auc_curve(targets, scores)
