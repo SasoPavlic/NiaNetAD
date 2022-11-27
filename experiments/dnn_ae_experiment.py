@@ -1,3 +1,4 @@
+import torch
 from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch import optim
@@ -15,7 +16,7 @@ class DNNAEExperiment(LightningModule):
         super(DNNAEExperiment, self).__init__()
 
         # https://github.com/Lightning-AI/lightning/issues/4390#issuecomment-717447779
-        #self.save_hyperparameters(logger=False)
+        # self.save_hyperparameters(logger=False)
 
         self.model = dnn_ae_model
         self.params = params
@@ -26,6 +27,7 @@ class DNNAEExperiment(LightningModule):
         self.testing_RMSE_metric = RMSE()
         self.test_RMSE = None
         self.AUC = None
+        self.newAUC = None
 
         try:
             self.hold_graph = self.params['retain_first_backpass']
@@ -114,25 +116,32 @@ class DNNAEExperiment(LightningModule):
                 self.testing_RMSE_metric.update(results[0], results[1])
 
     def on_train_end(self) -> None:
-        self.calculate_AUC()
+        self.get_AUC_metric()
 
-    def calculate_AUC(self):
+    def get_AUC_metric(self):
         anomaly_detection = AnomalyDetection([0], [1])
         dataloader_iterator = iter(self.trainer.datamodule.test_dataloader())
 
         inputs = []
-        reconstructs = []
+        outputs = []
+        scores = []
         targets = []
 
+        "Loop over dataset"
         for data, target in dataloader_iterator:
             data = data.to(self.curr_device)
             reconstructed, input = self.model.forward(data)
 
-            for x, y, z in zip(reconstructed, input, target):
+            "Loop over batch"
+            for x, y, z in zip(input, reconstructed, target):
                 inputs.append(x)
-                reconstructs.append(y)
-                targets.append(z)
+                outputs.append(y)
+                targets.append(z.item())
+                score = torch.sqrt(torch.sum((y - x) ** 2, dim=tuple(range(1, y.dim()))))
+                scores.append(score.detach().numpy().tolist())
 
-        anomaly_detection.find(inputs, reconstructs, targets)
+        anomaly_detection.find(inputs, outputs, targets)
+        anomaly_detection.calculate_roc_auc_curve(targets, scores)
 
         self.AUC = anomaly_detection.AUC
+        self.newAUC = anomaly_detection.newAUC

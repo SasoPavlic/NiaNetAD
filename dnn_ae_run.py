@@ -108,10 +108,10 @@ class DNNAEArchitecture(ExtendedProblem):
                 # Known problem: https://discuss.pytorch.org/t/why-my-model-returns-nan/24329/5
                 if math.isnan(experiment.test_RMSE.item()):
                     RMSE = int(9e10)
-                    AUC = experiment.AUC
+                    AUC = experiment.newAUC
                 else:
                     RMSE = experiment.test_RMSE.item()
-                    AUC = experiment.AUC
+                    AUC = experiment.newAUC
 
             complexity = (model.num_epochs ** 2) + (model.num_layers * 100) + (model.bottleneck_size * 10)
             fitness = (RMSE * 1000) + (complexity / 100)

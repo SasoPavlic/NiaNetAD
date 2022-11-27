@@ -1,5 +1,7 @@
 import numpy as np
-from sklearn.metrics import accuracy_score
+from matplotlib import pyplot as plt
+from sklearn.metrics import accuracy_score, roc_curve
+from sklearn.metrics import auc
 
 from experiments.metrics import ConfusionMatrix
 
@@ -57,9 +59,47 @@ class AnomalyDetection(object):
 
                 self.acc_list.append(accuracy_score(predicted_values, target))
 
-            self.AUC = abs(round(np.trapz(self.TPR_array, self.FPR_array), 3))
+            self.AUC = auc(self.TPR_array, self.FPR_array)
+
 
 
         except Exception as e:
             print(e)
             self.AUC = 0.0
+
+    def calculate_roc_auc_curve(self, targets, scores):
+        # https://stackoverflow.com/questions/58894137/roc-auc-score-for-autoencoder-and-isolationforest
+
+        try:
+            fpr = dict()
+            tpr = dict()
+            thresholds = dict()
+            roc_auc = dict()
+            for i in range(2):
+                fpr[i], tpr[i], thresholds[i] = roc_curve(targets, scores)
+                roc_auc[i] = auc(fpr[i], tpr[i])
+
+            self.newAUC = round(roc_auc[0], 3)
+
+            plt.figure()
+            lw = 2
+            plt.plot(
+                fpr[1],
+                tpr[1],
+                color="darkorange",
+                lw=lw,
+                label="ROC curve (area = %0.2f)" % roc_auc[1],
+            )
+
+            plt.plot([0, 1], [0, 1], color="navy", lw=lw, linestyle="--")
+            plt.xlim([0.0, 1.0])
+            plt.ylim([0.0, 1.05])
+            plt.xlabel("False Positive Rate")
+            plt.ylabel("True Positive Rate")
+            plt.title("Receiver operating characteristic")
+            plt.legend(loc="lower right")
+            plt.show()
+
+        except Exception as e:
+            print(e)
+            self.newAUC = 0.0
