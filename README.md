@@ -17,6 +17,8 @@ in the library [NiaPy](https://github.com/NiaOrg/NiaPy) to navigate efficiently 
 ### What it can do? 👀
 
 * **Construct novel AE's architecture** using nature-inspired algorithms.
+* * number of solutions = topology shape * layer step * layers * act. func. * epochs * lr * optimizers
+* * 3,456,000,000 = 2 * 60 * 60 * 8 * 100 * 100 * 6 
 * It can be utilized for **any kind of dataset**, which has **numerical** values.
 * Detect anomalies in data
 
@@ -79,7 +81,7 @@ docker run \
   --name=nianet-dnnae \
   -it \
   -v $(pwd):/app/logs \
-  --gpus all spartan300/nianet:ae \
+  --gpus all spartan300/nianet:dnnae \
   python ./dnn_ae_run.py
 ```
 
