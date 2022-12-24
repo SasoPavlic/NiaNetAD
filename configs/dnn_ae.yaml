@@ -5,7 +5,7 @@ model_params:
 
 data_params:
   anomaly_label: True
-  data_path: "data/"
+  data_path: "data/fault_detection.csv"
   batch_size: 10
   train_size: 0.65
   test_size: 0.25
