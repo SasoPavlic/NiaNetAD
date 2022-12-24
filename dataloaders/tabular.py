@@ -104,7 +104,7 @@ class TabularDataset(LightningDataModule):
         self.anomaly_label = anomaly_label
 
     def setup(self, stage: Optional[str] = None) -> None:
-        with open(f'{self.data_path}') as f:
+        with open(self.data_path) as f:
             df_dataset = pd.read_csv(f, delimiter=";")
 
         df_target = df_dataset["Fault_lag"]
