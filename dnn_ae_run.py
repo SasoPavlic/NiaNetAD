@@ -2,7 +2,7 @@ import argparse
 import math
 import uuid
 from pathlib import Path
-
+import numpy as np
 import torch
 import yaml
 from niapy.algorithms.basic import ParticleSwarmAlgorithm, DifferentialEvolution, FireflyAlgorithm, GeneticAlgorithm
@@ -50,14 +50,12 @@ seed_everything(config['exp_params']['manual_seed'], True)
 datamodule = TabularDataset(**config["data_params"], pin_memory=True)
 datamodule.setup()
 
-
-class DNNAEArchitecture(ExtendedProblem):
+class DNNAEArchitecture():
 
     def __init__(self, dimension):
-        super().__init__(dimension=dimension, lower=0, upper=1)
         self.iteration = 0
 
-    def _evaluate(self, solution, alg_name):
+    def random_search(self, solution, alg_name):
         print("=================================================================================================")
         print(f"ITERATION: {self.iteration}")
         print(f"SOLUTION : {solution}")
@@ -138,26 +136,25 @@ if __name__ == '__main__':
     y7: optimizer algorithm.
     """
     DIMENSIONALITY = 7
+    PROBLEM = DNNAEArchitecture(DIMENSIONALITY)
+    MAX_EVALS = 1000
+    NUM_ALGORITHMS = 5
+    RUNS = 1
 
-    runner = ExtendedRunner(
-        config['logging_params']['save_dir'],
-        dimension=DIMENSIONALITY,
-        max_evals=1000,
-        runs=1,
-        algorithms=[
-            ParticleSwarmAlgorithm(),
-            DifferentialEvolution(),
-            FireflyAlgorithm(),
-            SelfAdaptiveDifferentialEvolution(),
-            GeneticAlgorithm()
-        ],
-        problems=[
-            DNNAEArchitecture(DIMENSIONALITY)
-        ]
-    )
+
 
     print("=====================================SEARCH STARTED==============================================")
-    final_solutions = runner.run(export='json', verbose=True)
+
+    i = 0
+
+    # Start while loop
+    while i < MAX_EVALS * NUM_ALGORITHMS * RUNS:
+        # Generate 7-dimensional array with random numbers between 0 and 1
+        solution = solution = np.random.rand(DIMENSIONALITY)
+        # You can do further processing or storing of array here
+        PROBLEM.random_search(solution, "random-search")
+        i += 1
+
     print("=====================================SEARCH COMPLETED============================================")
 
     best_solution, best_algorithm = conn.best_results()
