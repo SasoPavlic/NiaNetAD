@@ -74,6 +74,7 @@ class DNNAEArchitecture(ExtendedProblem):
             return fitness
 
         else:
+            # TODO Find a more optimal way
             """Punishing bad decisions"""
             if len(model.encoding_layers) == 0 or len(model.decoding_layers) == 0:
                 RMSE = int(9e10)
@@ -105,13 +106,14 @@ class DNNAEArchitecture(ExtendedProblem):
                 runner.fit(experiment, datamodule=datamodule)
                 print(f'\nTraining end: {datetime.now().strftime("%H:%M:%S-%d/%m/%Y")}')
 
+                # TODO Find a more optimal way
                 # Known problem: https://discuss.pytorch.org/t/why-my-model-returns-nan/24329/5
                 if math.isnan(experiment.test_RMSE.item()):
                     RMSE = int(9e10)
-                    AUC = experiment.newAUC
+                    AUC = experiment.AUC
                 else:
                     RMSE = experiment.test_RMSE.item()
-                    AUC = experiment.newAUC
+                    AUC = experiment.AUC
 
             complexity = (model.num_epochs ** 2) + (model.num_layers * 100) + (model.bottleneck_size * 10)
             fitness = (RMSE * 1000) + (complexity / 100)

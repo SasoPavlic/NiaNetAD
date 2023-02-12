@@ -27,7 +27,6 @@ class DNNAEExperiment(LightningModule):
         self.testing_RMSE_metric = RMSE()
         self.test_RMSE = None
         self.AUC = None
-        self.newAUC = None
 
         try:
             self.hold_graph = self.params['retain_first_backpass']
@@ -140,8 +139,6 @@ class DNNAEExperiment(LightningModule):
                 score = torch.sqrt(torch.sum((y - x) ** 2, dim=tuple(range(1, y.dim()))))
                 scores.append(score.cpu().data.numpy().tolist())
 
-        anomaly_detection.find(inputs, outputs, targets)
         anomaly_detection.calculate_roc_auc_curve(targets, scores)
 
         self.AUC = anomaly_detection.AUC
-        self.newAUC = anomaly_detection.newAUC
