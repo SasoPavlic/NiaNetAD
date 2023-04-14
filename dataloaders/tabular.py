@@ -2,7 +2,7 @@ from typing import List, Optional, Union
 
 import pandas as pd
 import torch
-from pytorch_lightning import LightningDataModule
+from lightning.pytorch import LightningDataModule
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 

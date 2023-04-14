@@ -7,10 +7,10 @@ import torch
 import yaml
 from niapy.algorithms.basic import ParticleSwarmAlgorithm, DifferentialEvolution, FireflyAlgorithm, GeneticAlgorithm
 from niapy.algorithms.modified import SelfAdaptiveDifferentialEvolution
-from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, EarlyStopping
-from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.utilities.seed import seed_everything
+from lightning.pytorch import seed_everything
+from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint, EarlyStopping
+from lightning.pytorch import Trainer
 from tabulate import tabulate
 
 from dataloaders.tabular import TabularDataset
